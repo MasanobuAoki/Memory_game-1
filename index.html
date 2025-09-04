@@ -6,23 +6,49 @@
     <meta name="theme-color" content="#e60012" />
     <title>Memory Match — Nintendo-style</title>
     <meta name="description" content="A polished, accessible memory card game for the browser." />
-
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;800;900&display=swap" rel="stylesheet" />
-
-    <link rel="stylesheet" href="styles.css" />
+    <style>
+      :root { --red:#e60012; --red-dark:#c1000f; --bg:#0f0f12; --panel:#17171c; --panel-2:#1e1e24; --text:#f6f7fb; --muted:#b8bdc7; --focus:#ffd166; --card:#22222a; --card-front:#2b2b35; --shadow:0 10px 25px rgba(0,0,0,.35); }
+      *{box-sizing:border-box} html,body{height:100%;margin:0;background:radial-gradient(1200px 800px at 20% 0%,#191920 0%,#0f0f12 70%);color:var(--text);font-family:'Nunito',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
+      .app-header{display:flex;align-items:center;justify-content:space-between;padding:16px clamp(16px,4vw,40px);background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,0));border-bottom:1px solid rgba(255,255,255,.05);position:sticky;top:0;backdrop-filter:blur(8px);z-index:10}
+      .brand{display:flex;align-items:baseline;gap:10px}.badge{background:var(--red);color:#fff;padding:4px 10px;border-radius:999px;font-weight:900;letter-spacing:.02em;box-shadow:var(--shadow)} .title{margin:0;font-size:clamp(22px,4vw,32px);letter-spacing:.02em}
+      .toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+      .control{display:inline-flex;align-items:center;gap:8px;background:var(--panel);padding:8px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.06)}
+      .control select{appearance:none;background:var(--panel-2);color:var(--text);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:6px 10px;outline:none}
+      .btn{background:var(--panel);color:var(--text);border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:8px 14px;cursor:pointer;transition:transform .12s ease,background .2s ease,border-color .2s ease}
+      .btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(0)} .btn-primary{background:var(--red);border-color:var(--red-dark)} .btn-primary:hover{filter:brightness(1.05)}
+      .switch{position:relative;display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none}.switch input{display:none}
+      .switch .slider{width:42px;height:24px;background:var(--panel-2);border:1px solid rgba(255,255,255,.06);border-radius:999px;position:relative;transition:background .2s ease}
+      .switch .slider::after{content:'';width:18px;height:18px;background:var(--text);border-radius:50%;position:absolute;top:2px;left:3px;transition:transform .2s ease,background .2s ease}
+      .switch input:checked + .slider{background:var(--red);border-color:var(--red-dark)} .switch input:checked + .slider::after{transform:translateX(18px)} .switch .switch-label{color:var(--muted);font-weight:700}
+      .app-main{padding:24px clamp(16px,4vw,40px);max-width:1200px;margin:0 auto}
+      .hud{display:grid;grid-template-columns:repeat(3,minmax(120px,1fr));gap:12px;margin-bottom:16px}
+      .hud-item{background:var(--panel);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between}
+      .hud-label{color:var(--muted);font-weight:800;letter-spacing:.03em} .hud-value{font-weight:900;font-size:20px}
+      .board-wrap{display:grid;place-items:center}
+      .board{--cols:4;display:grid;grid-template-columns:repeat(var(--cols),minmax(72px,1fr));gap:clamp(10px,2.2vw,18px);width:min(90vw,900px)}
+      .card{position:relative;width:100%;aspect-ratio:3/4;transform-style:preserve-3d;transition:transform .6s cubic-bezier(.2,.8,.2,1);border-radius:16px;cursor:pointer;outline:none}
+      .card.is-flipped{transform:rotateY(180deg)} .card.is-matched{animation:pop 400ms ease}
+      .card-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:16px;display:grid;place-items:center;font-size:clamp(24px,6vw,48px);font-weight:900;user-select:none}
+      .card-front{background:linear-gradient(180deg,var(--card),var(--card-front));border:1px solid rgba(255,255,255,.08);box-shadow:var(--shadow)}
+      .card-back{transform:rotateY(180deg);background:linear-gradient(180deg,#2a2a5a,#1b1b3a);color:#fff;border:1px solid rgba(0,0,0,.35);box-shadow:var(--shadow)}
+      .card:focus-visible{box-shadow:0 0 0 3px var(--focus)}
+      .sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+      .modal::backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(3px)}
+      .modal .modal-content{background:var(--panel);color:var(--text);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:20px;min-width:min(92vw,420px);box-shadow:var(--shadow)}
+      .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:12px}
+      .app-footer{color:var(--muted);text-align:center;padding:18px;border-top:1px solid rgba(255,255,255,.05);background:linear-gradient(0deg,rgba(255,255,255,.04),rgba(255,255,255,0));margin-top:24px}
+      @keyframes pop{0%{transform:scale(1) rotateY(180deg)}50%{transform:scale(1.06) rotateY(180deg)}100%{transform:scale(1) rotateY(180deg)}}
+      @media (max-width:560px){.hud{grid-template-columns:1fr}}
+    </style>
   </head>
   <body>
     <header class="app-header" role="banner">
-      <div class="brand">
-        <span class="badge">Memory</span>
-        <h1 class="title">Match</h1>
-      </div>
-
+      <div class="brand"><span class="badge">Memory</span><h1 class="title">Match</h1></div>
       <nav class="toolbar" aria-label="Game settings">
-        <label class="control" for="difficulty">
-          <span>Difficulty</span>
+        <label class="control" for="difficulty"><span>Difficulty</span>
           <select id="difficulty" aria-label="Select difficulty">
             <option value="easy">Easy (4×3)</option>
             <option value="normal" selected>Normal (4×4)</option>
@@ -30,13 +56,9 @@
             <option value="insane">Insane (6×6)</option>
           </select>
         </label>
-
         <button id="restartBtn" class="btn" aria-label="Restart game">↻ Restart</button>
-
         <label class="switch" aria-label="Mute sounds">
-          <input id="muteToggle" type="checkbox" />
-          <span class="slider" aria-hidden="true"></span>
-          <span class="switch-label">Mute</span>
+          <input id="muteToggle" type="checkbox" /><span class="slider" aria-hidden="true"></span><span class="switch-label">Mute</span>
         </label>
       </nav>
     </header>
@@ -47,11 +69,7 @@
         <div class="hud-item" aria-label="Time"><span class="hud-label">Time</span><span id="time" class="hud-value">00:00</span></div>
         <div class="hud-item" aria-label="Matches"><span class="hud-label">Matches</span><span id="matches" class="hud-value">0</span></div>
       </section>
-
-      <section class="board-wrap">
-        <div id="board" class="board" role="grid" aria-label="Memory board"></div>
-      </section>
-
+      <section class="board-wrap"><div id="board" class="board" role="grid" aria-label="Memory board"></div></section>
       <section id="announce" class="sr-only" aria-live="assertive" aria-atomic="true"></section>
     </main>
 
@@ -70,6 +88,91 @@
       <p>Built for the web — keyboard friendly, accessible, and fun.</p>
     </footer>
 
-    <script src="script.js" type="module"></script>
+    <script type="module">
+      const emojiSet = ['🍄','⭐','🎮','🧩','🔔','💎','🍎','🐚','🍀','🔥','⚡','🌈','🪙','👾','🎲','🎯','🥇','🎵'];
+      const difficulties = { easy:{cols:4,rows:3}, normal:{cols:4,rows:4}, hard:{cols:6,rows:4}, insane:{cols:6,rows:6} };
+
+      const $board=document.getElementById('board');
+      const $moves=document.getElementById('moves');
+      const $matches=document.getElementById('matches');
+      const $time=document.getElementById('time');
+      const $announce=document.getElementById('announce');
+      const $difficulty=document.getElementById('difficulty');
+      const $restart=document.getElementById('restartBtn');
+      const $mute=document.getElementById('muteToggle');
+      const $modal=document.getElementById('modal');
+      const $playAgain=document.getElementById('playAgainBtn');
+      const $closeModal=document.getElementById('closeModalBtn');
+
+      let gameState=null;
+      const sounds={flip:createTone(880,.05),match:createTone(660,.12),mismatch:createTone(180,.12),win:createTone(1200,.25)};
+
+      function initGame(){
+        const {cols,rows}=difficulties[$difficulty.value];
+        const total=cols*rows;
+        const deck=buildDeck(total);
+        $board.style.setProperty('--cols', String(cols));
+        $board.innerHTML='';
+        gameState={deck,firstCardId:null,lock:false,moves:0,matches:0,totalPairs:total/2,startMs:null,timerInterval:null,muted:$mute.checked};
+        $moves.textContent='0'; $matches.textContent='0'; $time.textContent='00:00';
+        renderBoard(deck); startTimer();
+      }
+      function buildDeck(total){ const unique=total/2; const chosen=shuffle(emojiSet).slice(0,unique); const pairs=shuffle([...chosen,...chosen]);
+        return pairs.map((symbol,i)=>({id:`c${i}`,symbol,matched:false})); }
+      function renderBoard(deck){
+        const frag=document.createDocumentFragment();
+        for(const card of deck){
+          const btn=document.createElement('button'); btn.className='card'; btn.type='button'; btn.setAttribute('role','gridcell'); btn.setAttribute('aria-label','Hidden card'); btn.dataset.id=card.id;
+          btn.addEventListener('click',onCardClick); btn.addEventListener('keydown',onCardKeydown);
+          const front=document.createElement('div'); front.className='card-face card-front'; front.textContent='🎴';
+          const back=document.createElement('div'); back.className='card-face card-back'; back.textContent=card.symbol;
+          btn.append(front,back); frag.appendChild(btn);
+        } $board.appendChild(frag);
+      }
+      function onCardKeydown(e){
+        const current=e.currentTarget; const cards=Array.from($board.querySelectorAll('.card')); const index=cards.indexOf(current);
+        const cols=parseInt(getComputedStyle($board).getPropertyValue('--cols'),10);
+        switch(e.key){
+          case 'ArrowRight': cards[(index+1)%cards.length].focus(); e.preventDefault(); break;
+          case 'ArrowLeft': cards[(index-1+cards.length)%cards.length].focus(); e.preventDefault(); break;
+          case 'ArrowDown': cards[(index+cols)%cards.length].focus(); e.preventDefault(); break;
+          case 'ArrowUp': cards[(index-cols+cards.length)%cards.length].focus(); e.preventDefault(); break;
+          case 'Enter': case ' ': current.click(); e.preventDefault(); break;
+        }
+      }
+      function onCardClick(e){
+        if(!gameState||gameState.lock) return;
+        const btn=e.currentTarget; const id=btn.dataset.id; const card=gameState.deck.find(c=>c.id===id); if(!card||card.matched) return;
+        if(!btn.classList.contains('is-flipped')){ flip(btn,true); if(!gameState.muted) sounds.flip(); }
+        if(gameState.firstCardId===null){ gameState.firstCardId=id; btn.setAttribute('aria-label',`Revealed ${card.symbol}`); return; }
+        if(gameState.firstCardId===id) return;
+        gameState.moves+=1; $moves.textContent=String(gameState.moves);
+        const firstBtn=$board.querySelector(`.card[data-id=\"${gameState.firstCardId}\"]`); const firstCard=gameState.deck.find(c=>c.id===gameState.firstCardId); gameState.lock=true;
+        if(firstCard.symbol===card.symbol){
+          firstCard.matched=true; card.matched=true; firstBtn.classList.add('is-matched'); btn.classList.add('is-matched');
+          gameState.matches+=1; $matches.textContent=String(gameState.matches); announce(`Matched ${card.symbol}!`); if(!gameState.muted) sounds.match();
+          setTimeout(()=>{ firstBtn.setAttribute('aria-label',`Matched ${card.symbol}`); btn.setAttribute('aria-label',`Matched ${card.symbol}`); gameState.lock=false; gameState.firstCardId=null; checkWin(); },350);
+        } else {
+          if(!gameState.muted) sounds.mismatch(); announce('Not a match.');
+          setTimeout(()=>{ flip(firstBtn,false); flip(btn,false); firstBtn.setAttribute('aria-label','Hidden card'); btn.setAttribute('aria-label','Hidden card'); gameState.lock=false; gameState.firstCardId=null; },700);
+        }
+      }
+      function flip(el,show){ if(show){ el.classList.add('is-flipped'); } else { el.classList.remove('is-flipped'); } }
+      function checkWin(){ if(gameState.matches===gameState.totalPairs){ stopTimer(); if(!gameState.muted) sounds.win(); const msg=`Cleared in ${$time.textContent} with ${gameState.moves} moves!`; document.getElementById('modal-body').textContent=msg; if($modal.showModal) $modal.showModal(); else alert(msg); } }
+      function startTimer(){ gameState.startMs=Date.now(); if(gameState.timerInterval) clearInterval(gameState.timerInterval); gameState.timerInterval=setInterval(()=>{ const d=Date.now()-gameState.startMs; $time.textContent=formatMs(d); },200); }
+      function stopTimer(){ if(gameState?.timerInterval){ clearInterval(gameState.timerInterval); gameState.timerInterval=null; } }
+      function formatMs(ms){ const t=Math.floor(ms/1000); const m=String(Math.floor(t/60)).padStart(2,'0'); const s=String(t%60).padStart(2,'0'); return `${m}:${s}`; }
+      function announce(t){ $announce.textContent=t; }
+      function shuffle(a){ const b=[...a]; for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; }
+      function createTone(freq,dur){ let ctx=null; return ()=>{ try{ if(!ctx){ const AC=window.AudioContext||window.webkitAudioContext; ctx=new AC(); } const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='triangle'; o.frequency.value=freq; g.gain.value=.15; o.connect(g).connect(ctx.destination); o.start(); setTimeout(()=>{ g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+0.05); o.stop(ctx.currentTime+0.06); }, dur*1000);}catch{} }; }
+
+      $difficulty.addEventListener('change', initGame);
+      $restart.addEventListener('click', initGame);
+      $mute.addEventListener('change', ()=>{ if(gameState) gameState.muted=$mute.checked; });
+      $playAgain.addEventListener('click', e=>{ e.preventDefault(); $modal.close(); initGame(); });
+      $closeModal.addEventListener('click', e=>{ e.preventDefault(); $modal.close(); });
+
+      window.addEventListener('load', initGame);
+    </script>
   </body>
 </html>
